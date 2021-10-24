@@ -1,0 +1,135 @@
+---
+title: "Project #2 Dataset Selection"
+author: "Team 2 - Data Magicians"
+date: "Due October 24, 2021 11:59PM"
+output: 
+  html_document:
+    highlight: tango
+    theme: united
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    number_sections: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Our Business Problem
+
+## Business Scenario
+
+**Screening for Hepatitis C**
+
+According to an NIH study, approximately 2.5% (177.5M) adults worldwide are infected with Hepatitis C ranging from the highest prevalence in Africa at 2.9% of the population and the lowest in the Americas at 1.3% of the population. Our model would prove to be beneficial in both scenarios. In Africa where Hepatitis C is most prevalent, with the larger amounts of community spread, the demand for clinical testing is higher and causes more strain on the overall healthcare system. Depending on the availability of such tests and the access to healthcare of the population, many patients may go un-diagnosed. With our model, patients would have easy access to initial screening about whether they are at risk for Hepatitis C and if so, a test can be scheduled for them to be checked utilizing the proper medical processes. This would be especially useful for governmental agencies and NGOs to decrease the overall spread of Hepatitis C in Africa and allow for an overall safer population.
+
+On the other hand, when considering patients in the Americas which have the lowest rate of community spread, the CDC still recommends that patients get tested at least once in their lifetime and that they remain on the lookout for potential Hepatitis C. For these patients, clinical Hepatitis C tests which are costly and time-consuming may not necessarily be required at regular intervals. Instead, these patients can utilize our model to consistently check within seconds about whether they may be at risk and if so, schedule a clinical test. Rather than not getting tested at all, these patients would now have access to some sort of screening to check whether they may be at higher risk. This would be of interest to insurance companies as catching Hepatitis C earlier and treating patients accordingly with cheaper, less severe treatments would decrease the cost for insurance companies. Additionally, this would be of interest to governments as they would be able to screen their population of Hepatitis C and treat them to decrease the overall strain on the healthcare system.
+
+*Sources: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5016383/ *
+
+## Business Question
+
+How can we initially screen patients for Hepatitis C and what stage they may be in order to help optimize medical resources and dictate/facilitate necessary examinations and procedures, especially in areas with high prevalence?
+
+# Our Dataset
+
+The dataset our project team chose to explore is Hepatitis C data. This dataset contains laboratory values of 600+ blood donors and Hepatitis C patients and demographic values, such as age. The target attribute for classification is whether or not a patient is a viable blood donor or is a Hepatitis C patient, and, if they are a Hep C patient, what stage are they at (just Hep C, Fibrosis, or Cirrhosis)? One additional patient categorization that is provided in this dataset is a “suspect Blood Donor” (coded as “0s”). This is defined as occasions when a donor may have a known infection risk, either due to being infected or exposure through sexual or household contact or other close contact. When this is the case, as a general policy, donors should be deferred following any acute infection until they are fully recovered and no longer infectious. If a donor has been in close contact with an infectious disease, he/she should not donate within the incubation period of the infection, even if known to be immune. If the incubation period is unknown, an arbitrary deferral of 28 days from last contact may be implemented (Source: WHO). Aside from the Hep C categorization and the patient’s sex, the remaining data points in this set are numerical, including age and several blood lab levels. 
+
+**In summary:**
+
+Response variable = Category (0 - Blood Donor, 0s - suspect Blood Donor, 1 - Hepatitis, 2 - Fibrosis, 3 - Cirrhosis)
+
+Predictors = age, sex, 10 unique laboratory blood values
+
+*Please see below for an explanation of the laboratory blood levels included.*
+
+*Source: Kaggle*
+
+## Explanation of abbreviations
+
+ALB: Albumin range, **normal is 3.4 to 5.4 g/dL.** If you have a lower albumin level, you may have malnutrition. It can also mean that you have liver disease or an inflammatory disease. Higher albumin levels may be caused by acute infections, burns, and stress from surgery or a heart attack.
+
+ALP: Alkaline phosphatase is an enzyme that is present in many parts of the body, but it is primarily found in the liver, bones, intestine, and kidneys.
+Alkaline phosphatase testing measures the amount of this enzyme in the blood. Abnormal levels of ALP can be caused by liver problems and other types of health problems. Normal results **range between 30-120 IU/L.**
+
+ALT: Alanine aminotransferase is an enzyme that is found mostly in the liver. ALT levels can increase when liver cells are damaged, so the test can be used to evaluate the condition of the liver. **Normal result can range from 7 to 55 units per liter (U/L)**.
+
+AST: Aspartate aminotransferase is an enzyme that exists mostly in the liver, but it is found in numerous tissues in the body. When cells become damaged, AST can be released into the bloodstream. For this reason, abnormal levels of AST in a blood sample can be an indication of an underlying problem. **Normal levels are between 10 to 40 units per liter (U/L).**
+
+BIL: Bilirubin test measures the amount of bilirubin in the blood. Results are commonly expressed as mg/dL, or milligrams of bilirubin per deciliter of blood. Testing bilirubin can help doctors diagnose problems such as jaundice, a condition that may cause your eyes and skin to turn yellow, as well as hepatitis, cirrhosis, gallbladder disease, and hemolytic anemia. **Normal levels are between 0.3 and 1.2 milligrams per deciliter (mg/dL).**
+
+CHE: Cholinesterase levels determine if you have been exposed to and/or poisoned by certain organophosphate chemicals.**Normal pseudocholinesterase values range between 8 and 18 units per milliliter (U/mL).**
+
+CHOL:  cholesterol test — also called a lipid panel or lipid profile — is a blood test that can measure the amount of cholesterol and triglycerides in your blood. A cholesterol test can help determine your risk of the buildup of fatty deposits (plaques) in your arteries that can lead to narrowed or blocked arteries throughout your body (atherosclerosis). **Normal results are under 200 mg/dL.**
+
+CREA: The level of creatinine in your body is a marker of kidney function. Creatinine comes from the breakdown of creatine, a muscle protein. Properly functioning kidneys remove creatinine from the blood. High levels of creatinine mean that the kidneys are not functioning properly. When creatinine levels rise gradually, there are not usually any symptoms, and the higher levels can be detected only with blood tests. **The normal range of creatinine for adult men is 0.74 to 1.35 mg/dL and for adult women is 0.59 to 1.04 mg/dL.**
+
+GGT: Increased serum gamma-glutamyl transferase (GGT) levels are frequently observed in chronic hepatitis C virus (HCV) infection. In general, the higher the level, the greater the damage to the liver. Elevated levels may be due to liver diseases, such as hepatitis or cirrhosis, but they may also be due to other conditions, such as congestive heart failure, metabolic syndrome, diabetes, or pancreatitis. In adults, **GGT levels in the range of 0 to 30 IU/L are normal.**
+
+PROT: **A normal range for total protein is 60 to 80 grams per liter (g/L).** Adequate protein intake is important to build and maintain muscle mass and to assist in healing and repair.**Protein intake should be between about 45 – 120 grams a day in patients with hepatitis.**
+Sources : labetstonline.org	
+
+# Data Challenges
+
+**Multi-level response variable**
+Since the target variable has 5 different levels (0 - Blood Donor, 0s - suspect Blood Donor, 1 - Hepatitis, 2 - Fibrosis, 3 - Cirrhosis), the team plans to explore first the predictions of simply Hep (1-3) vs no Hep (0 & 0s) using all models (logistic, knn, ann, combined) and generate confusion matrices to evaluate the results. Moreover, the team will also explore the use of other models (KNN and ANN) to create full predictions (0-3).
+
+**Data Size**
+At this point in time, the size of the dataset does not appear to pose any major issues/concerns. See "Data Manipulation" below for ideas on leveraging additional data.
+
+**NA Handling**
+There are several records where laboratory blood values are reported as NA. The reasoning behind this is unknown (potentially the test was inconclusive or never conducted). The team has decided to replace NA values with averages of the target category for the given blood level in question. See the data cleaning efforts below for how this was conducted.
+
+**Data Manipulation**
+In addition to the data preparation below, the team is considering creating new columns that explore % deviations from the normal blood level values (reported by the National Institute of Health) for each lab result.
+
+## Data Cleaning Efforts
+
+```{r}
+# Downloading and Prepping the Data
+
+#downloading and prepping the data
+hepc <- read.csv("HepatitisCdata.csv")
+summary(hepc)
+
+# Make variables “Category” and “Sex” factors
+hepc$Category <- as.factor(hepc$Category)
+hepc$Sex <- as.factor(hepc$Sex)
+
+# Change “Sex” into a binary variable
+hepc$Sex <- ifelse(hepc$Sex == 'm', 0, 1)
+
+# Remove “X” id column as it adds no statistical value
+hepc$X <- NULL
+
+# Handling of incomplete/inconclusive data (NA): Replace NA values with averages of the target category for the given blood level in question
+for(i in 1:ncol(hepc)){ 
+hepc[is.na(hepc[,i]), i] <- mean(hepc[,i], na.rm = TRUE)
+ }
+
+str(hepc)
+
+# Getting Data Ready for Analysis
+# Using model.matrix to convert all the factors to dummy variables
+# We are converting all of the factors into dummy variables as the input into knn has to be numeric
+
+hepcmm <- as.data.frame(model.matrix(~.-1,hepc))
+
+# Randomize the rows in the data (shuffling the rows)
+set.seed(12345)
+hepc_random <- hepcmm[sample(nrow(hepcmm)),]
+
+#Normalize the data
+normalize <- function(x) {
+  return ((x - min(x)) / (max(x) - min(x)))
+}
+
+# we are going to normalize everything 
+hepc_norm <- as.data.frame(lapply(hepc_random, normalize))
+
+```
+
+# Why Invest?
+The value proposition of this project can be split between our two target markets: the Western market and the African market. When considering the Western market, this project can be leveraged by insurance companies to reduce claims by detecting Hepatitis C early and treating their customers with lower-cost, less severe drugs. Additionally, when considering the healthcare ecosystem as a whole, our preliminary screening model would save on any medical facility time, money, and resources while de-risking a patient's life. In the African market, our model will greatly benefit patients at high risk for Hepatitis C who may not have enough resources or money to be conducting enough medical tests. Every year, NGOs and philanthropists spend millions of dollars to combat the spread of Hepatitis C in Africa. Since our model is able to provide greater access to screenings for Hepatitis C at a low-cost, our model would be of interest to these stakeholders to improve the efficiency and reach of their operations. Ultimately, Hepatitis C is a very real and pertinent disease that many individuals fight today (see Business Scenario above), so above all else, this is an opportunity to save a life!
+
