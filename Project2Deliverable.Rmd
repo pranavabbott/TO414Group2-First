@@ -1,0 +1,95 @@
+---
+title: "Project2-InClass"
+author: "Pranav Abbott"
+date: "11/4/2021"
+output: html_document
+---
+
+## Data Cleaning Efforts
+
+```{r}
+library(caret)
+# Downloading and Prepping the Data
+#downloading and prepping the data
+hepc <- read.csv("HepatitisCdata.csv")
+summary(hepc)
+# Make variables “Category” and “Sex” factors
+hepc$Category <- as.factor(hepc$Category)
+hepc$Sex <- as.factor(hepc$Sex)
+# Change “Sex” into a binary variable
+hepc$Sex <- ifelse(hepc$Sex == 'm', 0, 1)
+# Remove “X” id column as it adds no statistical value
+hepc$X <- NULL
+#INITAL APPROACH - Impute NA with Averages
+# Handling of incomplete/inconclusive data (NA): Replace NA values with averages of the target category for the given blood level in question
+#for(i in 1:ncol(hepc)){ 
+#hepc[is.na(hepc[,i]), i] <- mean(hepc[,i], na.rm = TRUE)
+#}
+
+#Removing all NA columns - Removed 26 rows out of 615 -> ~4% of data
+print(nrow(hepc))
+hepc<-na.omit(hepc)
+print(nrow(hepc))
+str(hepc)
+summary(hepc)
+# Getting Data Ready for Analysis
+# Using model.matrix to convert all the factors to dummy variables
+
+# We are converting all of the factors into dummy variables as the input into knn has to be numeric
+#hepcmm <- as.data.frame(model.matrix(~.-1,hepc))
+# Randomize the rows in the data (shuffling the rows)
+set.seed(12345)
+hepc_random <- hepc[sample(nrow(hepc)),]
+#Normalize the data
+normalize <- function(x) {
+  return ((x - min(x)) / (max(x) - min(x)))
+}
+# we are going to normalize everything 
+hepc_norm <- as.data.frame(lapply(hepc_random[,-1], normalize))
+hepc_norm$Target <- hepc$Category
+hepc_norm$Sex <- as.factor(hepc_norm$Sex)
+```
+
+Logistic Regression
+```{r}
+hepc_norm$Target <- ifelse(hepc_norm$Target == '0=Blood Donor' | hepc_norm$Target == '0s=suspect Blood Donor', 0, 1) 
+summary(hepc_norm)
+train_set <- sample(1:nrow(hepc_norm), 0.7*nrow(hepc_norm))
+train <- hepc_norm[train_set, ]
+test <- hepc_norm[-train_set, ]
+logistic <- glm(formula = Target ~ ., data=train, family=binomial)
+summary(logistic)
+results <- predict(logistic,newdata=test,type='response')
+results <- ifelse(results > 0.1, 1, 0)
+results <- as.factor(results)
+test$Target <- as.factor(test$Target)
+conf_matr <- confusionMatrix(data=results, reference=test$Target)
+print("---------------------------------------------")
+print(conf_matr$overall['Accuracy'])
+train$Target <- as.factor(train$Target)
+```
+
+KNN
+```{r}
+library(class)
+train_labels <- hepc_norm[train_set, "Target"]
+test_labels <- hepc_norm[-train_set, "Target"]
+#To prove model is doing "something"
+#KNN <- knn(train = train, test = test, cl = train_labels, k=78)
+
+KNN <- knn(train = train, test = test, cl = train_labels, k=5)
+
+#Evaluate model results
+library(gmodels)
+CrossTable(x = test_labels, y = KNN, 
+           prop.chisq=FALSE)
+```
+ANN
+```{r}
+library(neuralnet)
+concrete_model <- neuralnet(formula = strength ~ cement + slag +
+                              ash + water + superplastic + 
+                              coarseagg + fineagg + age,
+                              data = concrete_train)
+
+```
