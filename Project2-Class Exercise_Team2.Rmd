@@ -1,0 +1,251 @@
+---
+title: 'Project #2 Class Exercise'
+author: "Team 2 - Data Magicians"
+date: "Due November 7, 2021 11:59PM"
+output: 
+  html_document:
+    highlight: tango
+    theme: united
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    number_sections: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Class Exercise
+
+## Important Notes and Future Analysis Plans
+
+**Multi-level response variable**
+Since the target variable has 5 different levels (0 - Blood Donor, 0s - suspect Blood Donor, 1 - Hepatitis, 2 - Fibrosis, 3 - Cirrhosis), the team plans to explore first the predictions of simply Hep (1-3) vs no Hep (0 & 0s) using all models (logistic, knn, ann, combined) and generate confusion matrices to evaluate the results. Moreover, the team will also explore the use of other models (KNN and ANN) to create full predictions (0-3).
+
+**NA Handling**
+There are several records where laboratory blood values are reported as NA. The reasoning behind this is unknown (potentially the test was inconclusive or never conducted). The team had originally decided to replace NA values with averages of the target category for the given blood level in question. For example, a patient who was in category X=1 with an N/A value for ALB would have the average ALB value for all X=1 patients.
+
+However, upon further analysis, the team decided remove these patients with NA values given the small amount records in question and the fact that there would be a variety of extraneous variables that we don’t have access to that contribute to very different blood levels in each unique individual (ie exercise habits, eating habits, lifestyles, hereditary complications, etc.). A simple average would not be adequate - we already know that even based solely on sex, blood levels will differ a lot (despite which HepC category the patient is in)
+
+By removing all patients who have an N/A value for any column, we would remove 26 patients, having 589 rows remaining. This is still a significant number of patients to use for our training data sets. 
+
+**Data Manipulation**
+In addition to the analysis, the team is considering a few other approaches to draw more insights:
+
+1. Creating new columns that explore % deviations from the normal blood level values (reported by the National Institute of Health) for each lab result
+
+2. Exploring interaction effects in the logistic model (knowing, for example, blood levels will probably be tied closely to gender)
+
+3. Implementing a decision tree model into the analysis plan to improve upon "explainability" in our conclusions
+
+## Downloading and Prepping the Data
+
+```{r}
+# Load Libraries
+library(class)
+library(lattice)
+library(ggplot2)
+library(caret)
+library(gmodels)
+library(neuralnet)
+
+# Downloading and Prepping the data
+hepc <- read.csv("HepatitisCdata.csv")
+summary(hepc)
+str(hepc)
+
+# Make variables “Category” and “Sex” factors
+hepc$Category <- as.factor(hepc$Category)
+hepc$Sex <- as.factor(hepc$Sex)
+
+# Remove “X” id column as it adds no statistical value
+hepc$X <- NULL
+
+# Handling of incomplete/inconclusive data (NA)
+
+#INITAL APPROACH - Exchange NA with Averages
+#for(i in 1:ncol(hepc)){ 
+#hepc[is.na(hepc[,i]), i] <- mean(hepc[,i], na.rm = TRUE)
+#}
+
+#Removing all NA rows -> ~4% of data
+hepc<-na.omit(hepc)
+
+str(hepc)
+```
+
+## Getting Data Ready for Analysis
+
+```{r}
+# For first approach, group category 0 and 0s as non-Hepc and remaining categories as Hepc
+hepc1 <- hepc
+hepc1$Category <- ifelse(hepc1$Category == '0=Blood Donor' | hepc1$Category == '0s=suspect Blood Donor', "(Potential) Donor", "HepC") 
+hepc1$Category <- as.factor(hepc1$Category)
+
+# Using model.matrix to convert all the factors to dummy variables
+# We are converting all of the factors into dummy variables as the input into knn has to be numeric
+hepc1mm <- as.data.frame(model.matrix(~.-1,hepc1))
+hepc1mm$`Category(Potential) Donor` <- NULL
+
+# Randomize the rows in the data (shuffling the rows)
+set.seed(12345)
+hepc1_random <- hepc1mm[sample(nrow(hepc1mm)),]
+
+#Normalize the data (min-max normalization)
+normalize <- function(x) {
+  return ((x - min(x)) / (max(x) - min(x)))
+}
+
+hepc1_norm <- as.data.frame(lapply(hepc1_random, normalize))
+```
+
+## Getting Train and Test Samples
+
+```{r}
+# Selects rows for test data
+set.seed(12345)
+test_set <- sample(1:nrow(hepc1_norm), 89) 
+
+# Create test and train sets
+#First the predictors
+hepc1_train <- hepc1_norm[-test_set, -match("CategoryHepC",names(hepc1_norm))]
+hepc1_test <- hepc1_norm[test_set, -match("CategoryHepC",names(hepc1_norm))]
+
+#Now the response (aka Labels)
+hepc1_train_labels <- hepc1_norm[-test_set, "CategoryHepC"]
+hepc1_test_labels <- hepc1_norm[test_set, "CategoryHepC"]
+```
+
+## Logistic Regression Model
+
+```{r}
+set.seed(12345)
+hepc1_logistic <- hepc1[sample(nrow(hepc1)),]
+
+logistic_set <- sample(1:nrow(hepc1_logistic), 89)
+logistic_train <- hepc1_logistic[-logistic_set,]
+logistic_test <- hepc1_logistic[logistic_set,]
+
+model_logistic1 <- glm(Category ~ ., data = logistic_train, family = binomial)
+summary(model_logistic1)
+
+#refined model to include only significant vars
+model_logistic2 <- glm(Category ~ ALP + ALT + AST + BIL + GGT + PROT, data = logistic_train, family = binomial)
+summary(model_logistic2)
+model_logistic3 <- glm(Category ~ ALP + ALT + AST + BIL + GGT, data = logistic_train, family = binomial)
+summary(model_logistic3)
+
+logistic_results <- predict(model_logistic3, newdata = logistic_test, type = 'response')
+logistic_results <- ifelse(logistic_results > 0.5, 1, 0)
+CrossTable(x = logistic_test$Category, y = logistic_results, prop.chisq = FALSE)
+
+logistic_test_carat <- logistic_test
+logistic_test_carat$Category <- ifelse(logistic_test_carat$Category == "HepC", 1, 0)
+confusionMatrix(as.factor(logistic_results), as.factor(logistic_test_carat$Category), positive = "1")
+```
+
+### Logistic Discussion
+
+Analysis: Accuracy is about 95.51%. Better at predicting true negatives than true positives. (Sens=0.8182, Spec=0.9744, Kappa=0.7925)
+
+Most significant predictors include (only different blood levels): *("+" means correlates positively with success, "-" means correlates negatively with success)* 
+
+(-) ALP
+(-) ALT
+(+) AST
+(+) BIL
+(+) GGT
+
+Based on this model, we can tell that in fact, HepC diagnoses rely heavily on factors related to different blood levels (and NOT as heavily on demographic - ie sex).
+
+## KNN Model
+
+```{r}
+set.seed(12345)
+hepc1_knn <- hepc1_norm
+
+knn_set <- test_set
+knn_train <- hepc1_train
+knn_test <- hepc1_test
+
+knn_train_labels <- hepc1_train_labels
+knn_test_labels <- hepc1_test_labels
+
+#starting K value
+k <- round(sqrt(nrow(knn_train)),0)
+k2 <- 0.25*k #accuracy increases
+
+knn_results <- knn(train = knn_train, test = knn_test, cl = knn_train_labels, k = k2)
+CrossTable(x = knn_test_labels, y = knn_results, prop.chisq = FALSE)
+confusionMatrix(as.factor(knn_results), as.factor(knn_test_labels), positive = "1")
+```
+
+### KNN Discussion
+
+Accuracy is about 96.63%.
+
+Sensitivity helps explains how good the model is at identifying positive cases when in fact the person is positive for HepC (few false negative results). In this case, the Knn model was average in this respect with a score of 0.500. Specificity helps explain how good the model is at identifying cases as potential donors when in fact the person is negative for HepC. In this case, the Knn model excelled with a perfect score 1.000.  Based on these and the other evaluation metrics, we can see that the KNN model was ultimately good at identifying negatives more so than positives. Finally, we  see a kappa score of 0.651, which is an indicator of agreement between classification and truth values.
+
+## ANN Model
+
+```{r}
+set.seed(12345)
+hepc1_ann <- hepc1_norm
+
+ann_set <- test_set
+ann_train <- hepc1_ann[-ann_set,]
+ann_test <- hepc1_ann[ann_set,]
+
+#simple model with 1 neuron 
+ann_model1 <- neuralnet(formula = CategoryHepC ~ ., data = ann_train)
+plot(ann_model1)
+
+#complex model with hidden layers/neurons
+ann_model2 <- neuralnet(formula = CategoryHepC ~ ., data = ann_train, hidden = c(2,2))
+plot(ann_model2)
+
+ann_model_results <- compute(ann_model2, ann_test[-1])
+ann_results <- ann_model_results$net.result
+ann_results <- ifelse(ann_results > 0.5, 1, 0)
+CrossTable(x = ann_test$CategoryHepC, y = ann_results, prop.chisq = FALSE)
+confusionMatrix(as.factor(ann_results), as.factor(ann_test$CategoryHepC), positive = "1")
+
+```
+
+### ANN Discussion
+
+Accuracy is about 98.88%
+
+Sensitivity: 0.833
+Specificity: 1.000
+Kappa: 0.9032
+
+## Combined Model
+
+```{r}
+set.seed(12345)
+combined_test_labels <- hepc1_test_labels
+
+combined_results_df <- data.frame(logistic_results, knn_results, ann_results)
+names(combined_results_df)[1] <- "Logistic"
+names(combined_results_df)[2] <- "KNN"
+names(combined_results_df)[3] <- "ANN"
+
+combined_results_df$Combined <- as.numeric(combined_results_df$Logistic) + as.numeric(combined_results_df$KNN) + as.numeric(combined_results_df$ANN)
+combined_results_df$final_pred <- ifelse(combined_results_df$Combined >= 2, 1, 0)
+
+CrossTable(x = combined_test_labels, y = combined_results_df$final_pred, prop.chisq = FALSE)
+confusionMatrix(as.factor(combined_results_df$final_pred), as.factor(combined_test_labels), positive = "1")
+```
+
+### Combined Discussion
+
+Accuracy is about 86.52%
+
+Sensitivity: 0.83333
+Specificity: 0.86747
+Kappa: 0.3952
+
+## Initial Conclusions Related to Business Question and Plan for Future Models
+
